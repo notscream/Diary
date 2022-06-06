@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang ="ru">
+  <head>
+    <title>Ежедневник</title>
+    <meta charset ="utf-8">
+    <link rel ="stylesheet" href ="css/main.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,300,100&subset=cyrillic,latin">
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" href="images/favicon.png" sizes="32x32">
+    <link rel="stylesheet" type="text/css" href="css/styles.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,300,100,700,100italic,300italic,400italic">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.3/vue.min.js"></script>
+  </head>
+
+  <body>
+    <header class = "primary-header container group">
+      <h1 class ="logo"><a href ="index.html">Мой <br> Ежедневник </a></h1>
+      <h3 class ="tagline">Ежедневник, сделанный на момент 16.05.2022</h3>
+      <nav class ="nav primary-nav">
+        <ul> 
+          <li><a href ="index.html">Главная</a></li><!--
+          --><li><a href ="contacts.html">Мои Контакты</a></li><!--
+          --><li><a href ="calendar.html">Календарь</a></li>
+        </ul>   
+      </nav>
+    </header>
+
+    <section class = "hero container">
+      <h2>Ежедневник by Garipov Timur.</h2>
+      <p>Мне 18 лет, я студент 4 курса Колледжа экономики, бизнеса и права КарУ Казпотребсоюза. Учусь на дисциплине под названием Информационные Системы. Этот ежедневник разработан в качестве моей дипломной работы, по кнопке снизу же можно перейти к календарю заметок. </p>
+      
+      <a href ="calendar.html" class ="btn btn-alt">Перессылка на календарь заметок!</a>
+    </section>
+
+    <section class ="main-style ">
+
+      <h1 class="main-h1">Ежедневник</h1>
+      <div id="app">
+        <section class="todo-wrapper">
+          <h2 class="todo-title">{{ today.day }}<br>{{ today.date }}</h2>
+          <form @keydown.enter.prevent="">
+            <input type="text" class="input-todo" v-bind:class="{ active: new_todo }" placeholder="Введите вашу задачу ✏️" v-model="new_todo" v-on:keyup.enter="addItem">
+            <div class="btn1 btn-add" v-bind:class="{ active: new_todo }"  @click="addItem">+</div>
+          </form>
+    
+          <div v-if="pending.length > 0">
+            <p class="status busy">У вас {{ pending.length }} невыполненных<span> задач</span></p>
+            <transition-group name="todo-item" tag="ul" class="todo-list">
+              <li v-for="(item, index) in pending" v-bind:key="item.title">
+                <input class="todo-checkbox" v-bind:id="'item_' + item.id" v-model="item.done" type="checkbox">
+                <label v-bind:for="'item_' + item.id"></label>
+                <span class="todo-text">{{ item.title }}</span>
+                <span class="delete" @click="deleteItem(item)"></span>
+              </li>
+            </transition>  
+          </div> 
+    
+          <transition name="slide-fade">
+            <p class="status free" v-if="!pending.length" ><img src="images/beer_celebration.svg" alt="celebration">Время отдохнуть!  У вас нет никаких задач.</p> 
+          </transition> 
+    
+          <div v-if="completed.length > 0 && showComplete">
+            <p class="status">Выполненные задачи: {{ completedPercentage }}</p>
+            <transition-group name="todo-item" tag="ul" class="todo-list archived">
+              <li v-for="(item, index) in completed" v-bind:key="item.title">
+                <input class="todo-checkbox" v-bind:id="'item_' + item.id" v-model="item.done" type="checkbox">
+                <label v-bind:for="'item_' + item.id"></label>
+                <span class="todo-text">{{ item.title }}</span>
+                <span class="delete" @click="deleteItem(item)"></span>
+              </li>
+            </transition>  
+          </div>
+          <div class="control-buttons">
+            <div class="btn1 btn-secondary" v-if="completed.length > 0" @click="toggleShowComplete"><span v-if="!showComplete">Выполненные</span><span v-else>Cпрятать</span></div>
+            <div class="btn1 btn-secondary" v-if="todoList.length > 0" @click="clearAll">Удалить все</div>
+          </div>
+        </section>
+      </div>
+
+     </section>
+     <script>
+      new Vue({
+        el: '#app',
+        data() {
+          return {
+            todoList: [
+              {"id":0,"title":"Защитить свой диплом","done":false},
+              {"id":1,"title":"Получить хорошую оценку","done":false},
+              {"id":4,"title":"Создать сайт дипломной работы","done":true}
+            ],
+            new_todo: '',
+            showComplete: false,
+          };
+        },
+        mounted() {
+          this.getTodos();
+        },
+        watch: {
+          todoList: {
+            handler: function(updatedList) {
+              localStorage.setItem('todo_list', JSON.stringify(updatedList));
+            },
+            deep: true
+          }
+        },
+        computed:{
+          pending: function() {
+            return this.todoList.filter(function(item) {
+              return !item.done;
+            })
+          },
+          completed: function() {
+            return this.todoList.filter(function(item) {
+              return item.done;
+            }); 
+          },
+          completedPercentage: function() {
+            return (Math.floor((this.completed.length / this.todoList.length) * 100)) + "%";
+          },
+          today: function() {
+            var weekday = ["Воскресенье","Понедельник","Вторник","Среда","Четверг","Пятница","Суббота"];
+            var today = new Date();
+            
+            var mm = today.getMonth()+1; //January is 0!
+            var dd = today.getDate();
+            var yyyy = today.getFullYear();
+      
+            if(dd<10) {
+                dd = '0'+dd
+            } 
+      
+            if(mm<10) {
+                mm = '0'+mm
+            } 
+      
+            today = {
+              day: weekday[today.getDay()],
+              date:  dd + '-' + mm + '-' + yyyy,
+            }
+      
+            return(today);
+          }
+        },
+        methods: {
+          // get all todos when loading the page
+          getTodos() {
+            if (localStorage.getItem('todo_list')) {
+              this.todoList = JSON.parse(localStorage.getItem('todo_list'));
+            }
+          },
+          // add a new item
+          addItem() {
+            // validation check
+            if (this.new_todo) {
+              this.todoList.unshift({
+                id: this.todoList.length,
+                title: this.new_todo,
+                done: false,
+              });
+            }
+            // reset new_todo
+            this.new_todo = '';
+            // save the new item in localstorage
+            return true;
+          },
+          deleteItem(item) {
+            this.todoList.splice(this.todoList.indexOf(item), 1);
+          },
+          toggleShowComplete() {
+            this.showComplete = !this.showComplete;
+          },
+          clearAll() {
+            this.todoList = [];
+          }
+        },
+      });
+      </script>
+    <footer class = "primary-footer container group nav">
+      <small>&copy; by Garipov Timur</small>
+      <nav>
+        <a href ="index.html">Главная</a>
+        <a href ="contacts.html">Мои Контакты</a>
+        <a href ="calendar.html">Календарь</a>
+      </nav> 
+    </footer>
+
+  </body>
+
+
+
+
+</html>
